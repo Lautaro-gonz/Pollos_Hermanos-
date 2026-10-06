@@ -4,7 +4,7 @@
 // ⚠ NUNCA pongas aquí la clave secreta (sb_secret_… / service_role): saltea toda la seguridad.
 
 // Supabase › Project Settings › API › Project URL (ej: https://abcdefgh.supabase.co)
-export const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+export const SUPABASE_URL = 'https://fapggmtqkbsarzoimexx.supabase.co';
 // Supabase › Project Settings › API Keys › Publishable key
 export const SUPABASE_ANON_KEY = 'sb_publishable_5ld6M7mcz8kcTi8Kth_hLQ_bEbbwzJL';
 
