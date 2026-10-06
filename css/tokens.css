@@ -1,0 +1,78 @@
+/* ==========================================================================
+   Design tokens — estética cálida, suave y con movimiento
+   ========================================================================== */
+
+:root {
+  /* ---------- Colores ---------- */
+  --color-bg: #fdfbf7;            /* blanco hueso / crema */
+  --color-surface: #fffdf9;       /* tarjetas */
+  --color-sand: #f6efe4;          /* superficies secundarias, chips, footer */
+  --color-sand-strong: #ede3d3;
+  --color-border: #ede5d8;
+
+  --color-text: #2d2d2d;          /* gris oscuro cálido, nunca negro puro */
+  --color-text-soft: #6b635a;     /* texto secundario */
+  --color-text-faint: #9a9086;
+
+  --color-primary: #c8643b;       /* terracota */
+  --color-primary-hover: #b4552e;
+  --color-primary-soft: #f8e6dc;
+  --color-on-primary: #fffaf5;
+
+  --color-accent: #e0a93b;        /* mostaza suave */
+  --color-accent-soft: #fbf0d6;
+  --color-on-accent: #3a2a0c;
+
+  --color-sale: #b8442a;          /* precio con descuento (terracota profundo) */
+
+  /* ---------- Tipografía ---------- */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-text: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --fs-hero: clamp(2.75rem, 1.6rem + 5.2vw, 5.75rem);
+  --fs-h2: clamp(1.875rem, 1.4rem + 1.8vw, 2.75rem);
+  --fs-h3: 1.25rem;
+  --fs-lead: clamp(1.05rem, 1rem + 0.3vw, 1.25rem);
+  --fs-body: 1rem;
+  --fs-small: 0.875rem;
+  --fs-xs: 0.75rem;
+
+  --lh-tight: 1.05;
+  --lh-heading: 1.2;
+  --lh-body: 1.6;
+
+  /* ---------- Radios ---------- */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  /* ---------- Espaciado (base 4px) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-section: clamp(64px, 5vw + 40px, 120px);
+
+  /* ---------- Sombras cálidas y sutiles ---------- */
+  --shadow-sm: 0 1px 2px rgba(74, 52, 30, 0.04), 0 4px 14px rgba(74, 52, 30, 0.06);
+  --shadow-md: 0 2px 4px rgba(74, 52, 30, 0.04), 0 14px 34px rgba(74, 52, 30, 0.10);
+  --shadow-primary: 0 6px 18px rgba(200, 100, 59, 0.28);
+
+  /* ---------- Movimiento ---------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;
+  --dur-base: 320ms;
+  --dur-reveal: 800ms;
+
+  /* ---------- Layout ---------- */
+  --container-max: 1240px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --nav-h: 64px;
+}
