@@ -17,17 +17,9 @@ export function rangesFor(date) {
   return BUSINESS_HOURS[date.getDay()] ?? [];
 }
 
-export const isClosedDay = (date) => rangesFor(date).length === 0;
-
 /** "09:00 a 12:45 y 18:00 a 20:30" */
 export function formatRanges(ranges) {
   return ranges.map(([a, b]) => `${a} a ${b}`).join(' y ');
-}
-
-/** ¿La fecha/hora cae dentro de alguna franja? (el horario de cierre se acepta) */
-export function isWithinHours(date) {
-  const min = minutesOf(date);
-  return rangesFor(date).some(([a, b]) => min >= toMinutes(a) && min <= toMinutes(b));
 }
 
 /** Texto amigable con el horario del día: "Los sábados atendemos de 09:00 a 13:00." */
@@ -40,23 +32,36 @@ export function describeDay(date) {
     : `${cap} estamos cerrados.`;
 }
 
+const toHHMM = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+
 /**
- * Primer día (desde `from`, a medianoche) que todavía tiene algún horario
- * disponible respetando la anticipación mínima.
+ * Turnos de retiro disponibles para un día, agrupados por franja.
+ * Excluye los que no respetan la anticipación mínima respecto de `now`.
+ * @returns {{ label: string, times: string[] }[]}
  */
-export function firstBookableDay(from = new Date(), leadMinutes = 0, maxDays = 14) {
-  const earliest = new Date(from.getTime() + leadMinutes * 60_000);
+export function slotsFor(day, { now = new Date(), leadMinutes = 0, step = 15 } = {}) {
+  const earliest = now.getTime() + leadMinutes * 60_000;
+  return rangesFor(day)
+    .map(([open, close]) => {
+      const times = [];
+      for (let m = toMinutes(open); m <= toMinutes(close); m += step) {
+        const slot = new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(m / 60), m % 60);
+        if (slot.getTime() >= earliest) times.push(toHHMM(m));
+      }
+      // Franja que empieza antes de las 14 h = "Mañana", el resto = "Tarde"
+      return { label: toMinutes(open) < 14 * 60 ? 'Mañana' : 'Tarde', times };
+    })
+    .filter((group) => group.times.length > 0);
+}
+
+/** Días (a medianoche) desde hoy hasta `maxDays` que tienen al menos un turno libre. */
+export function bookableDays({ now = new Date(), leadMinutes = 0, maxDays = 14, step = 15 } = {}) {
+  const days = [];
   for (let i = 0; i <= maxDays; i += 1) {
-    const day = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i);
-    const ranges = rangesFor(day);
-    const ok = ranges.some(([, close]) => {
-      const end = new Date(day);
-      end.setMinutes(toMinutes(close));
-      return end >= earliest;
-    });
-    if (ok) return day;
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    if (slotsFor(day, { now, leadMinutes, step }).length) days.push(day);
   }
-  return null;
+  return days;
 }
 
 /**

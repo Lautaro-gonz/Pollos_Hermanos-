@@ -3,12 +3,13 @@
 import { formatPrice } from './supabase.js';
 import { WHATSAPP_NUMBER } from './config.js';
 import {
-  DAY_NAMES, rangesFor, isClosedDay, isWithinHours, describeDay, firstBookableDay,
+  DAY_NAMES, describeDay, slotsFor, bookableDays,
 } from './hours.js';
 
 const STORAGE_KEY = 'lph-cart-v1';
 const MIN_LEAD_MINUTES = 30;   // anticipación mínima para retirar
 const MAX_DAYS_AHEAD = 14;     // hasta cuántos días adelante se puede reservar
+const SLOT_STEP_MINUTES = 15;  // cada cuánto se ofrecen turnos (09:00, 09:15, …)
 
 /* ---------------------------------------------------------------------------
    Estado
@@ -254,7 +255,10 @@ function closeCart() {
 toggleBtn.addEventListener('click', openCart);
 overlay.addEventListener('click', closeCart);
 drawer.querySelectorAll('[data-cart-close]').forEach((b) => b.addEventListener('click', closeCart));
-$('cart-checkout').addEventListener('click', () => showView('checkout'));
+$('cart-checkout').addEventListener('click', () => {
+  refreshSchedule(); // los turnos de hoy pueden haber vencido desde que cargó la página
+  showView('checkout');
+});
 $('checkout-back').addEventListener('click', () => showView('cart'));
 
 document.addEventListener('keydown', (e) => {
@@ -282,20 +286,9 @@ const pad = (n) => String(n).padStart(2, '0');
 const toDateValue = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 const timeHint = $('time-hint');
-
-function setDateLimits() {
-  const today = new Date();
-  const max = new Date();
-  max.setDate(max.getDate() + MAX_DAYS_AHEAD);
-  form.elements.date.min = toDateValue(today);
-  form.elements.date.max = toDateValue(max);
-  if (!form.elements.date.value) {
-    // Por defecto: el primer día que todavía tenga horario disponible (nunca domingo)
-    const first = firstBookableDay(today, MIN_LEAD_MINUTES, MAX_DAYS_AHEAD);
-    form.elements.date.value = toDateValue(first || today);
-  }
-  updateTimeHint();
-}
+const dateSelect = form.elements.date;
+const timeSelect = form.elements.time;
+const SLOT_OPTIONS = () => ({ now: new Date(), leadMinutes: MIN_LEAD_MINUTES, step: SLOT_STEP_MINUTES });
 
 function pickupDate(dateValue, timeValue = '00:00') {
   const [y, m, d] = dateValue.split('-').map(Number);
@@ -303,51 +296,81 @@ function pickupDate(dateValue, timeValue = '00:00') {
   return new Date(y, m - 1, d, hh, mm);
 }
 
-/** Muestra el horario del día elegido y ajusta min/max del selector de hora. */
-function updateTimeHint() {
-  const value = form.elements.date.value;
-  if (!value) {
+function option(value, text) {
+  const o = document.createElement('option');
+  o.value = value;
+  o.textContent = text;
+  return o;
+}
+
+/** "Hoy · martes 6/10", "Mañana · miércoles 7/10", "Viernes 9/10" */
+function dayLabel(day) {
+  const today = new Date();
+  const diff = Math.round((day - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / 86_400_000);
+  const name = DAY_NAMES[day.getDay()];
+  const date = `${day.getDate()}/${day.getMonth() + 1}`;
+  if (diff === 0) return `Hoy · ${name} ${date}`;
+  if (diff === 1) return `Mañana · ${name} ${date}`;
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${date}`;
+}
+
+/**
+ * Llena el selector de días con los que tienen turnos libres
+ * (nunca domingos ni días cuyo horario ya pasó). Conserva la elección si sigue disponible.
+ */
+function fillDays() {
+  const previous = dateSelect.value;
+  const days = bookableDays({ ...SLOT_OPTIONS(), maxDays: MAX_DAYS_AHEAD });
+  dateSelect.replaceChildren(...days.map((d) => option(toDateValue(d), dayLabel(d))));
+  if (days.some((d) => toDateValue(d) === previous)) dateSelect.value = previous;
+  fillTimes();
+}
+
+/** Llena el selector de horas con los turnos del día elegido, agrupados por franja. */
+function fillTimes() {
+  const previous = timeSelect.value;
+  if (!dateSelect.value) {
+    timeSelect.replaceChildren();
     timeHint.textContent = '';
     return;
   }
-  const day = pickupDate(value);
-  const ranges = rangesFor(day);
+  const day = pickupDate(dateSelect.value);
+  const groups = slotsFor(day, SLOT_OPTIONS());
+
+  const placeholder = option('', 'Elegí un horario');
+  placeholder.disabled = true;
+  placeholder.selected = true;
+
+  timeSelect.replaceChildren(placeholder, ...groups.map(({ label, times }) => {
+    const group = document.createElement('optgroup');
+    group.label = label;
+    group.append(...times.map((t) => option(t, `${t} hs`)));
+    return group;
+  }));
+  if (groups.some((g) => g.times.includes(previous))) timeSelect.value = previous;
   timeHint.textContent = describeDay(day);
-  form.elements.time.min = ranges[0]?.[0] ?? '';
-  form.elements.time.max = ranges.at(-1)?.[1] ?? '';
 }
 
-/** Errores de fecha/hora según los horarios reales del local. */
+/** Recalcula días y horarios (el tiempo pasa mientras el cliente arma el pedido). */
+function refreshSchedule() {
+  fillDays();
+}
+
+/** Por si un turno venció entre que se eligió y se envió el pedido. */
 function scheduleErrors(dateValue, timeValue) {
   const errors = {};
   if (!dateValue) {
     errors.date = 'Elegí el día de retiro.';
     return errors;
   }
-
-  const day = pickupDate(dateValue);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const max = new Date(today);
-  max.setDate(max.getDate() + MAX_DAYS_AHEAD);
-
-  if (day < today) errors.date = 'Esa fecha ya pasó. Elegí hoy o un día próximo.';
-  else if (day > max) errors.date = `Podés reservar hasta ${MAX_DAYS_AHEAD} días adelante.`;
-  else if (isClosedDay(day)) errors.date = `Los ${DAY_NAMES[day.getDay()]}s estamos cerrados. Elegí otro día y te esperamos.`;
-
-  if (errors.date) return errors;
-
   if (!timeValue) {
     errors.time = 'Elegí la hora de retiro.';
     return errors;
   }
-
-  const when = pickupDate(dateValue, timeValue);
-  if (!isWithinHours(when)) {
-    // El horario del día ya se muestra justo arriba (#time-hint), no repetirlo
-    errors.time = 'A esa hora estamos cerrados. Elegí un horario dentro de la franja indicada.';
-  } else if (when < new Date(Date.now() + MIN_LEAD_MINUTES * 60_000)) {
-    errors.time = `Necesitamos al menos ${MIN_LEAD_MINUTES} minutos para preparar tu pedido. Elegí un horario un poco más tarde.`;
+  const stillAvailable = slotsFor(pickupDate(dateValue), SLOT_OPTIONS())
+    .some((g) => g.times.includes(timeValue));
+  if (!stillAvailable) {
+    errors.time = 'Ese horario ya no está disponible. Elegí otro, por favor.';
   }
   return errors;
 }
@@ -412,6 +435,11 @@ form.addEventListener('submit', (e) => {
   const { data, errors } = validate();
   const firstError = Object.keys(errors)[0];
   if (firstError) {
+    if (errors.time && data.time) {
+      // El turno venció: refrescar opciones y mantener visible el aviso
+      refreshSchedule();
+      setError('time', errors.time);
+    }
     form.elements[firstError].focus();
     return;
   }
@@ -427,7 +455,7 @@ form.addEventListener('submit', (e) => {
 
   clearCart();
   form.reset();
-  setDateLimits();
+  refreshSchedule();
   showView('success');
 });
 
@@ -436,16 +464,11 @@ form.addEventListener('input', (e) => {
   if (e.target.name && e.target.getAttribute('aria-invalid') === 'true') setError(e.target.name, '');
 });
 
-// Fecha/hora: se validan apenas se eligen, sin esperar al envío
-form.addEventListener('change', (e) => {
-  if (e.target.name !== 'date' && e.target.name !== 'time') return;
-  if (e.target.name === 'date') updateTimeHint();
-  const { date, time } = form.elements;
-  const errors = scheduleErrors(date.value, time.value);
-  setError('date', errors.date);
-  // Solo marcar la hora si ya se eligió una (no regañar antes de tiempo)
-  setError('time', time.value ? errors.time : '');
+// Al cambiar de día, mostrar solo los turnos de ese día
+dateSelect.addEventListener('change', () => {
+  fillTimes();
+  setError('time', '');
 });
 
-setDateLimits();
+refreshSchedule();
 render();
