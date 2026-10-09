@@ -1,4 +1,4 @@
-<!doctype html>
+s<!doctype html>
 <html lang="es-AR">
 <head>
   <meta charset="utf-8">
@@ -15,8 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:ital,opsz,wght,SOFT@0,9..144,500..700,100;1,9..144,500..700,100&display=swap" rel="stylesheet">
 
-  <link rel="preconnect" href="https://images.unsplash.com">
-  <link rel="preload" as="image" href="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=2000&q=75">
+  <link rel="preload" as="image" href="assets/hero-local-1920.webp"
+        imagesrcset="assets/hero-local-900.webp 900w, assets/hero-local-1400.webp 1400w, assets/hero-local-1920.webp 1920w"
+        imagesizes="100vw" type="image/webp">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
@@ -59,21 +60,29 @@
     <!-- Hero -->
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-media" data-parallax="0.25">
-        <!-- TEMPORAL: foto de Unsplash. Reemplazar por una foto propia del local -->
-        <img
-          src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=2000&q=75"
-          srcset="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=900&q=70 900w,
-                  https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=1400&q=75 1400w,
-                  https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=2000&q=75 2000w"
-          sizes="100vw"
-          alt=""
-          fetchpriority="high">
+        <picture>
+          <source
+            type="image/webp"
+            srcset="assets/hero-local-900.webp 900w,
+                    assets/hero-local-1400.webp 1400w,
+                    assets/hero-local-1920.webp 1920w"
+            sizes="100vw">
+          <img
+            src="assets/hero-local-1920.jpg"
+            srcset="assets/hero-local-900.jpg 900w,
+                    assets/hero-local-1400.jpg 1400w,
+                    assets/hero-local-1920.jpg 1920w"
+            sizes="100vw"
+            width="1920" height="1080"
+            alt="Frente de la pollería Los Pollos Hermanos en Av. Cabo de Hornos, Posadas"
+            fetchpriority="high">
+        </picture>
       </div>
 
       <div class="container hero-content">
         <span class="hero-tag" id="store-status">Retiro en el local</span>
-        <h1 class="display hero-title" id="hero-title">Pollo crocante, <em>hecho en casa</em></h1>
-        <p class="hero-lead">Armá tu pedido en dos minutos, mandalo por WhatsApp y pasá a buscarlo calentito por Av. Cabo de Hornos.</p>
+        <h1 class="display hero-title" id="hero-title">Pollo fresco,<em>de la casa a tu mesa</em></h1>
+        <p class="hero-lead">Elegí tus cortes en dos minutos, mandá el pedido por WhatsApp y pasá a retirarlo por Av. Cabo de Hornos.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#menu">
             Ver el menú

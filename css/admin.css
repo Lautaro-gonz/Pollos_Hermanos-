@@ -397,6 +397,11 @@ body.is-checking .page-loader {
   font-size: 1.2rem;
 }
 
+.admin-row-price .price-unit {
+  color: var(--color-text-soft);
+  font-size: var(--fs-xs);
+}
+
 .admin-row-actions {
   display: flex;
   gap: var(--space-1);
@@ -672,6 +677,59 @@ textarea.input {
 
 .field-error:empty {
   display: none;
+}
+
+.field-hint {
+  color: var(--color-text-soft);
+  font-size: var(--fs-xs);
+}
+
+.field-hint:empty {
+  display: none;
+}
+
+/* ---------- Selector segmentado (unidad de venta) ---------- */
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-sand);
+}
+
+.segmented-option {
+  position: relative;
+  font-weight: 600;
+}
+
+.segmented-option input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented-option span {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-soft);
+  font-size: var(--fs-small);
+  text-align: center;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.segmented-option input:checked + span {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text);
+}
+
+.segmented-option input:focus-visible + span {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .input[aria-invalid="true"] {

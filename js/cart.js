@@ -3,6 +3,9 @@
 import { formatPrice } from './supabase.js';
 import { WHATSAPP_NUMBER } from './config.js';
 import {
+  unitOf, formatQty, formatUnitPrice, describeLine, roundQty,
+} from './units.js';
+import {
   DAY_NAMES, describeDay, slotsFor, bookableDays,
 } from './hours.js';
 
@@ -15,13 +18,17 @@ const SLOT_STEP_MINUTES = 15;  // cada cuánto se ofrecen turnos (09:00, 09:15, 
    Estado
    --------------------------------------------------------------------------- */
 
-/** @type {{ id: string, name: string, price: number, image: string, qty: number }[]} */
+/** @type {{ id: string, name: string, price: number, image: string, qty: number, unit: string }[]} */
 let items = load();
 
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(data) ? data.filter((i) => i && i.id && i.qty > 0) : [];
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter((i) => i && i.id && i.qty > 0)
+      .map((i) => ({ ...i, unit: unitOf(i).value, qty: roundQty(i.qty, i.unit) }))
+      .filter((i) => i.qty > 0);
   } catch {
     return [];
   }
@@ -35,7 +42,8 @@ function save() {
   }
 }
 
-const totalQty = () => items.reduce((sum, i) => sum + i.qty, 0);
+// El globito cuenta productos distintos: sumar kilos y unidades no diría nada.
+const totalQty = () => items.length;
 const totalPrice = () => items.reduce((sum, i) => sum + i.qty * i.price, 0);
 
 /** Precio efectivo de un producto (con descuento si corresponde). */
@@ -45,16 +53,18 @@ export function effectivePrice(product) {
 }
 
 export function addToCart(product, image) {
+  const { value: unit, addStep } = unitOf(product);
   const existing = items.find((i) => i.id === product.id);
   if (existing) {
-    existing.qty += 1;
+    existing.qty = roundQty(existing.qty + addStep, unit);
   } else {
     items.push({
       id: product.id,
       name: product.name,
       price: effectivePrice(product),
       image: image || product.image_url || '',
-      qty: 1,
+      qty: addStep,
+      unit,
     });
   }
   commit();
@@ -62,11 +72,11 @@ export function addToCart(product, image) {
 }
 
 function setQty(id, qty) {
-  if (qty <= 0) items = items.filter((i) => i.id !== id);
-  else {
-    const item = items.find((i) => i.id === id);
-    if (item) item.qty = Math.min(qty, 99);
-  }
+  const item = items.find((i) => i.id === id);
+  if (!item) return;
+  const next = roundQty(qty, item.unit);
+  if (next <= 0) items = items.filter((i) => i.id !== id);
+  else item.qty = Math.min(next, 99);
   commit();
 }
 
@@ -86,7 +96,15 @@ export function syncCartWithProducts(products) {
     .filter((i) => byId.has(i.id))
     .map((i) => {
       const p = byId.get(i.id);
-      return { ...i, name: p.name, price: effectivePrice(p), image: i.image || p.image_url || '' };
+      const unit = unitOf(p).value;
+      return {
+        ...i,
+        name: p.name,
+        price: effectivePrice(p),
+        image: i.image || p.image_url || '',
+        unit,
+        qty: roundQty(i.qty, unit) || unitOf(p).step,
+      };
     });
   if (JSON.stringify(items) !== before) commit();
 }
@@ -154,17 +172,19 @@ function renderItem(item) {
     thumb.append(img);
   }
 
+  const unit = unitOf(item);
+
   const info = el('div', 'cart-item-info');
   info.append(
     el('p', 'cart-item-name', item.name),
-    el('p', 'cart-item-unit', `${formatPrice(item.price)} c/u`),
+    el('p', 'cart-item-unit', formatUnitPrice(item.price, unit.value)),
   );
 
   const stepper = el('div', 'qty-stepper');
   stepper.append(
-    iconButton(`Quitar uno de ${item.name}`, ICON_MINUS, () => setQty(item.id, item.qty - 1)),
-    el('span', 'qty-value', String(item.qty)),
-    iconButton(`Agregar uno de ${item.name}`, ICON_PLUS, () => setQty(item.id, item.qty + 1)),
+    iconButton(`Quitar ${unit.stepLabel} de ${item.name}`, ICON_MINUS, () => setQty(item.id, item.qty - unit.step)),
+    el('span', 'qty-value', formatQty(item.qty, unit.value)),
+    iconButton(`Agregar ${unit.stepLabel} de ${item.name}`, ICON_PLUS, () => setQty(item.id, item.qty + unit.step)),
   );
   info.append(stepper);
 
@@ -182,7 +202,8 @@ function render() {
   const qty = totalQty();
   badge.textContent = String(qty);
   badge.dataset.count = String(qty);
-  toggleBtn.setAttribute('aria-label', qty ? `Abrir pedido (${qty} productos)` : 'Abrir pedido');
+  toggleBtn.setAttribute('aria-label',
+    qty ? `Abrir pedido (${qty} ${qty === 1 ? 'producto' : 'productos'})` : 'Abrir pedido');
 
   list.replaceChildren(...items.map(renderItem));
   const empty = items.length === 0;
@@ -410,7 +431,7 @@ function buildMessage({ name, phone, date, time }) {
     '*NUEVO PEDIDO — Los Pollos Hermanos*',
     '',
     '*Detalle del pedido:*',
-    ...items.map((i) => `• ${i.qty} x ${i.name} — ${formatPrice(i.price * i.qty)}`),
+    ...items.map((i) => `• ${describeLine(i)} — ${formatPrice(i.price * i.qty)}`),
     '',
     `*TOTAL: ${formatPrice(totalPrice())}*`,
     '',

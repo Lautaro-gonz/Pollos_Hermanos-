@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured, formatPrice } from './supabase.js';
 import { observeReveal } from './motion.js';
 import { placeholderImage, DEMO_PRODUCTS } from './placeholders.js';
 import { addToCart, syncCartWithProducts } from './cart.js';
+import { unitOf } from './units.js';
 import { storeStatus, DAY_NAMES } from './hours.js';
 
 const grid = document.getElementById('product-grid');
@@ -81,6 +82,7 @@ function renderCard(product, index) {
   body.append(el('h3', 'product-name', product.name));
   if (product.description) body.append(el('p', 'product-desc', product.description));
 
+  const unit = unitOf(product);
   const priceRow = el('p', 'price-row');
   const onSale = product.sale_price != null && Number(product.sale_price) < Number(product.price);
   if (onSale) {
@@ -93,10 +95,14 @@ function renderCard(product, index) {
   } else {
     priceRow.append(el('span', 'price', formatPrice(product.price)));
   }
+  priceRow.append(el('span', 'price-unit', unit.priceSuffix));
 
   const addBtn = el('button', 'btn btn-primary btn-sm btn-add');
   addBtn.type = 'button';
-  addBtn.setAttribute('aria-label', `Agregar ${product.name} al carrito`);
+  addBtn.setAttribute('aria-label',
+    unit.value === 'kg'
+      ? `Agregar un kilo de ${product.name} al carrito`
+      : `Agregar ${product.name} al carrito`);
   addBtn.innerHTML = `${ICON_PLUS}<span>Agregar</span>`;
   addBtn.addEventListener('click', () => {
     addToCart(product, img.currentSrc || img.src);
@@ -165,12 +171,22 @@ async function loadProducts() {
     return;
   }
 
-  const { data, error } = await supabase
+  const query = (columns) => supabase
     .from('products')
-    .select('id, name, description, category, price, sale_price, image_url, badge')
+    .select(columns)
     .eq('is_available', true)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
+
+  const BASE_COLUMNS = 'id, name, description, category, price, sale_price, image_url, badge';
+  let { data, error } = await query(`${BASE_COLUMNS}, unit`);
+
+  // 42703 = la columna `unit` todavía no existe (falta correr supabase/catalogo.sql).
+  // El menú sigue funcionando: todo se muestra por unidad hasta que se corra.
+  if (error?.code === '42703') {
+    console.warn('[catálogo] Falta la columna "unit": corré supabase/catalogo.sql en Supabase.');
+    ({ data, error } = await query(BASE_COLUMNS));
+  }
 
   if (error) {
     console.error('Error cargando productos:', error);

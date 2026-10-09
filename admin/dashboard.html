@@ -116,9 +116,24 @@
           <p class="field-error" data-error-for="name"></p>
         </div>
 
+        <div class="field">
+          <span class="field-label">¿Cómo se vende?</span>
+          <div class="segmented" role="radiogroup" aria-label="Cómo se vende">
+            <label class="segmented-option">
+              <input type="radio" name="unit" value="unidad" checked>
+              <span>Por unidad</span>
+            </label>
+            <label class="segmented-option">
+              <input type="radio" name="unit" value="kg">
+              <span>Por kilo</span>
+            </label>
+          </div>
+          <p class="field-hint" id="unit-hint">El precio que cargues abajo es el de una unidad.</p>
+        </div>
+
         <div class="form-row">
           <div class="field">
-            <label for="p-price">Precio</label>
+            <label for="p-price">Precio <span class="field-optional" id="price-unit-note">por unidad</span></label>
             <input class="input" id="p-price" name="price" type="number" inputmode="decimal" min="0" step="1" required placeholder="18000">
             <p class="field-error" data-error-for="price"></p>
           </div>

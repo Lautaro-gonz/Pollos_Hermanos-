@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured, formatPrice } from '../supabase.js';
 import { STORAGE_BUCKET } from '../config.js';
 import { getSession, checkIsAdmin, signOut } from './session.js';
+import { UNITS, unitOf } from '../units.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -133,6 +134,7 @@ function renderRow(p, index) {
   } else {
     price.append(el('span', 'price', formatPrice(p.price)));
   }
+  price.append(el('span', 'price-unit', unitOf(p).priceSuffix));
 
   // Visible (switch con guardado instantáneo)
   const sw = el('label', 'switch');
@@ -313,17 +315,34 @@ function openEditor(product = null) {
     f.description.value = product.description ?? '';
     f.sort_order.value = product.sort_order ?? 0;
     f.is_available.checked = product.is_available;
+    f.unit.value = unitOf(product).value;
     setPreview(product.image_url || null);
   } else {
     // Nuevo: al final del menú
     f.sort_order.value = products.reduce((max, p) => Math.max(max, p.sort_order ?? 0), 0) + 1;
     f.is_available.checked = true;
+    f.unit.value = UNITS.unidad.value;
     setPreview(null);
   }
 
+  syncUnitLabels();
   openDialog(editor);
   setTimeout(() => f.name.focus(), 50);
 }
+
+/* ---------- Unidad de venta: unidad o kilo ---------- */
+
+/** Aclara en el formulario a qué se refiere el precio según la unidad elegida. */
+function syncUnitLabels() {
+  const kg = form.elements.unit.value === 'kg';
+  $('unit-hint').textContent = kg
+    ? 'El precio que cargues abajo es el del kilo. En la tienda se muestra "por kg" y el cliente elige cuántos kilos lleva.'
+    : 'El precio que cargues abajo es el de una unidad.';
+  $('price-unit-note').textContent = kg ? 'por kilo' : 'por unidad';
+  $('p-price').placeholder = kg ? '11000' : '18000';
+}
+
+form.addEventListener('change', (e) => e.target.name === 'unit' && syncUnitLabels());
 
 $('new-product').addEventListener('click', () => openEditor());
 
@@ -445,6 +464,7 @@ function readForm() {
     category: text(f.category.value),
     badge: text(f.badge.value),
     description: text(f.description.value),
+    unit: f.unit.value === 'kg' ? 'kg' : 'unidad',
     sort_order: Number.isFinite(num(f.sort_order.value)) ? Math.trunc(num(f.sort_order.value)) : 0,
     is_available: f.is_available.checked,
   };
@@ -532,6 +552,7 @@ form.addEventListener('submit', async (e) => {
 function friendlyDbError(err) {
   const msg = (err?.message || '').toLowerCase();
   if (msg.includes('sale_below_price')) return 'El precio de oferta tiene que ser menor al precio normal.';
+  if (err?.code === '42703' && msg.includes('unit')) return 'Falta activar la venta por kilo: corré supabase/catalogo.sql en el SQL Editor de Supabase.';
   if (msg.includes('row-level security') || err?.code === '42501') return 'Tu usuario no tiene permisos para hacer esto.';
   if (msg.includes('jwt') || msg.includes('session')) return 'Tu sesión venció. Volvé a ingresar.';
   if (msg.includes('payload too large') || msg.includes('maximum allowed size')) return 'La foto es demasiado pesada.';

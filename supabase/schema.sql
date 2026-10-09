@@ -40,7 +40,9 @@ create table if not exists public.products (
   name         text not null check (char_length(name) between 1 and 120),
   description  text check (char_length(description) <= 500),
   category     text,                                   -- ej: 'Pollos', 'Combos', 'Guarniciones', 'Bebidas'
-  price        numeric(12,2) not null check (price >= 0),
+  price        numeric(12,2) not null check (price >= 0),   -- por unidad o por kilo, según `unit`
+  unit         text not null default 'unidad'
+                 check (unit in ('unidad', 'kg')),           -- 'kg' = el precio es por kilo
   sale_price   numeric(12,2) check (sale_price >= 0),  -- precio con descuento (opcional)
   badge        text check (char_length(badge) <= 40),  -- ej: 'Nuevo', 'Más pedido'
   image_url    text,                                   -- URL pública de la foto
@@ -51,6 +53,14 @@ create table if not exists public.products (
   updated_at   timestamptz not null default now(),
   constraint sale_below_price check (sale_price is null or sale_price < price)
 );
+
+-- Tablas creadas antes de que existiera la venta por kilo
+alter table public.products
+  add column if not exists unit text not null default 'unidad';
+
+alter table public.products drop constraint if exists products_unit_check;
+alter table public.products
+  add constraint products_unit_check check (unit in ('unidad', 'kg'));
 
 create index if not exists products_available_order_idx
   on public.products (is_available, sort_order, created_at);
@@ -148,16 +158,23 @@ create policy "Fotos de productos: admin borra"
 
 
 -- -----------------------------------------------------------------------------
--- 5. Productos de ejemplo (opcional — borrá este bloque si no los querés)
+-- 5. Catálogo inicial
+--    Se carga solo si la tabla está vacía. Para (re)cargarlo sobre una tabla
+--    que ya tiene datos, usá supabase/catalogo.sql.
 -- -----------------------------------------------------------------------------
-insert into public.products (name, description, category, price, sale_price, badge, sort_order)
+insert into public.products (name, description, category, price, unit, sort_order)
 select * from (values
-  ('Pollo entero a las brasas', 'Con limón y chimichurri de la casa', 'Pollos',       18000::numeric, null::numeric, 'Más pedido', 1),
-  ('Medio pollo a las brasas',  'Ideal para dos',                     'Pollos',       10000,          null,          null,         2),
-  ('Combo familiar',            'Pollo entero + papas grandes + gaseosa 1,5 L', 'Combos', 28000,     25000,         null,         3),
-  ('Papas fritas grandes',      'Cortadas a mano',                    'Guarniciones', 6000,           null,          null,         4),
-  ('Ensalada mixta',            'Lechuga, tomate y cebolla',          'Guarniciones', 4500,           null,          null,         5)
-) as seed(name, description, category, price, sale_price, badge, sort_order)
+  ('Milanesas de pollo',             null::text, 'Milanesas',        11000::numeric, 'kg',     1),
+  ('Milanesas de carne de peceto',   null,       'Milanesas',        17500,          'kg',     2),
+  ('Hamburguesas de pollo',          null,       'Hamburguesas',     10500,          'kg',     3),
+  ('Hamburguesas de carne',          null,       'Hamburguesas',     15000,          'kg',     4),
+  ('Supremas',                       null,       'Cortes de pollo',  13000,          'kg',     5),
+  ('Patitas de pollo',               null,       'Cortes de pollo',   6300,          'kg',     6),
+  ('Muslitos de pollo',              null,       'Cortes de pollo',   6300,          'kg',     7),
+  ('Pata muslo entera',              null,       'Cortes de pollo',   5300,          'kg',     8),
+  ('Alas de pollo',                  null,       'Cortes de pollo',   4500,          'kg',     9),
+  ('Arrollado de pollo',             null,       'Arrollados',       18000,          'unidad', 10)
+) as seed(name, description, category, price, unit, sort_order)
 where not exists (select 1 from public.products);
 
 

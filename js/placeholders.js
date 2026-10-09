@@ -22,9 +22,13 @@ const KEYWORDS = [
   [/papa|frita/i, IMAGES.papas],
   [/combo|familiar/i, IMAGES.combo],
   [/milanesa/i, IMAGES.milanesa],
+  [/hambur|burger/i, IMAGES.burger],
+  [/suprema|pechuga/i, IMAGES.polloGrill],
+  [/arrollado|fiambre/i, IMAGES.polloGrill],
+  [/patita|muslito|muslo|pata\b/i, IMAGES.polloAsado],
+  [/\bala|alita/i, IMAGES.polloFrito],
   [/tira|nugget|crisp|crocante|frito/i, IMAGES.tiras],
   [/sandw|sánd/i, IMAGES.sandwich],
-  [/hambur|burger/i, IMAGES.burger],
   [/medio|grill|plancha/i, IMAGES.polloGrill],
   [/pollo|brasa|asad/i, IMAGES.polloAsado],
 ];
@@ -40,12 +44,14 @@ export function placeholderImage(product, index = 0) {
 
 /** Menú de demostración: se muestra solo si Supabase todavía no está configurado. */
 export const DEMO_PRODUCTS = [
-  { id: 'demo-1', name: 'Pollo entero a las brasas', description: 'Dorado lento, con limón y chimichurri de la casa.', category: 'Pollos', price: 18000, sale_price: null, badge: 'Más pedido', image_url: IMAGES.polloAsado },
-  { id: 'demo-2', name: 'Balde de pollo crocante', description: '8 presas rebozadas con nuestra mezcla secreta de especias.', category: 'Pollos', price: 21000, sale_price: 18500, badge: null, image_url: IMAGES.polloFrito },
-  { id: 'demo-3', name: 'Tiras de pollo', description: '10 tiras crocantes con salsa de ajo suave.', category: 'Pollos', price: 9500, sale_price: null, badge: null, image_url: IMAGES.tiras },
-  { id: 'demo-4', name: 'Sándwich de pollo crispy', description: 'Pan brioche, pollo crocante, pickles y salsa picante.', category: 'Sándwiches', price: 8500, sale_price: null, badge: 'Nuevo', image_url: IMAGES.sandwich },
-  { id: 'demo-5', name: 'Hamburguesa doble cheddar', description: 'Doble medallón, cheddar fundido, lechuga y tomate.', category: 'Hamburguesas', price: 9800, sale_price: null, badge: null, image_url: IMAGES.burger },
-  { id: 'demo-6', name: 'Combo hamburguesa + papas', description: 'Hamburguesa completa con papas fritas medianas.', category: 'Combos', price: 12500, sale_price: 11000, badge: null, image_url: IMAGES.combo },
-  { id: 'demo-7', name: 'Milanesa de pollo', description: 'Con limón grillado. Ideal para acompañar con ensalada.', category: 'Pollos', price: 8900, sale_price: null, badge: null, image_url: IMAGES.milanesa },
-  { id: 'demo-8', name: 'Papas fritas grandes', description: 'Cortadas a mano, con sal y perejil.', category: 'Guarniciones', price: 6000, sale_price: null, badge: null, image_url: IMAGES.papas },
+  { id: 'demo-1',  name: 'Milanesas de pollo',           description: null, category: 'Milanesas',       price: 11000, unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.milanesa },
+  { id: 'demo-2',  name: 'Milanesas de carne de peceto', description: null, category: 'Milanesas',       price: 17500, unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.milanesa },
+  { id: 'demo-3',  name: 'Hamburguesas de pollo',        description: null, category: 'Hamburguesas',    price: 10500, unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.burger },
+  { id: 'demo-4',  name: 'Hamburguesas de carne',        description: null, category: 'Hamburguesas',    price: 15000, unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.burgerClasica },
+  { id: 'demo-5',  name: 'Supremas',                     description: null, category: 'Cortes de pollo', price: 13000, unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.polloGrill },
+  { id: 'demo-6',  name: 'Patitas de pollo',             description: null, category: 'Cortes de pollo', price: 6300,  unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.polloAsado },
+  { id: 'demo-7',  name: 'Muslitos de pollo',            description: null, category: 'Cortes de pollo', price: 6300,  unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.polloAsado },
+  { id: 'demo-8',  name: 'Pata muslo entera',            description: null, category: 'Cortes de pollo', price: 5300,  unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.polloAsado },
+  { id: 'demo-9',  name: 'Alas de pollo',                description: null, category: 'Cortes de pollo', price: 4500,  unit: 'kg',     sale_price: null, badge: null, image_url: IMAGES.polloFrito },
+  { id: 'demo-10', name: 'Arrollado de pollo',           description: null, category: 'Arrollados',      price: 18000, unit: 'unidad', sale_price: null, badge: null, image_url: IMAGES.polloGrill },
 ];
